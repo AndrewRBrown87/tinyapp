@@ -14,7 +14,6 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  console.log(urlDatabase);
   res.render("urls_index", {
     urlDatabase: urlDatabase
   });
