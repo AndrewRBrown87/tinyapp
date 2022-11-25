@@ -14,7 +14,7 @@ function generateRandomStrings() {
   let tinyURL = "";
 
   for (let i = 0; i < 6; i++) {
-    if (Math.random() > 0.5) {
+    if (Math.random() > 0.7) {
       tinyURL += Math.floor(Math.random() * 10);
     } else {
       let alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -55,18 +55,15 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.update;
+  res.redirect('/urls');
+})
+
 app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect('/urls');
 })
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

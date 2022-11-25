@@ -20,7 +20,11 @@
         <p class="card-text">
           Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
         </p>
-        <a href='#'>link to nowhere</a>
+        <form method="POST" action="/urls/<%= id %>">
+          <h5 class="card-title">Edit</h5>
+          New URL: <input name = "update" value = "<%= longURL%>">
+          <input type = "submit" value = "Update">
+        </form>
       </div>
       <div class="card-footer text-muted"></div>
     </div>
