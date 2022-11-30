@@ -12,16 +12,22 @@ app.use(express.urlencoded({ extended: true }));
 
 //URL database object
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 //Users database object
 const users = {
-  userRandomID: {
-    id: "userRandomID",
+  aJ48lW: {
+    id: "aJ48lW",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur",
+    password: "password",
   },
   user2RandomID: {
     id: "user2RandomID",
@@ -65,6 +71,19 @@ const generateRandomStrings = function() {
   return randomString;
 };
 
+//Return specific user's URLs
+const urlsForUser = function(id) {
+  const userUrlDatabase = {};
+
+  //Build user specific URL database
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      userUrlDatabase[url] = urlDatabase[url];
+    }
+  }
+  return userUrlDatabase;
+};
+
 //Get Root Page Redirect
 app.get("/", (req, res) => {
   res.redirect('/urls');
@@ -72,51 +91,113 @@ app.get("/", (req, res) => {
 
 //Get URLs Home Page
 app.get("/urls", (req, res) => {
-  const templateVars = {urlDatabase , user : getUserById(req.cookies["user_id"])};
-  res.render("urls_index", templateVars);
+  if (!req.cookies["user_id"]) {
+    //if not logged in
+    res.send("Register to Login and view URLs.");
+  } else {
+    const templateVars = {urlDatabase : urlsForUser(req.cookies["user_id"]) , user : getUserById(req.cookies["user_id"])};
+    res.render("urls_index", templateVars);
+  }
 });
 
 //Get new URL form
 app.get("/urls/new", (req, res) => {
-  const templateVars = {user : getUserById(req.cookies["user_id"])};
-  res.render("urls_new", templateVars);
+  if (!req.cookies["user_id"]) {
+    //Redirect if not logged in
+    res.redirect('/login');
+  } else {
+    const templateVars = {user : getUserById(req.cookies["user_id"])};
+    res.render("urls_new", templateVars);
+  }
 });
 
 //Post new URL to URL database
 app.post("/urls", (req, res) => {
-  const id = generateRandomStrings();
-  urlDatabase[id] = req.body.longURL;
-  res.redirect(`/urls/${id}`); // Redirect to new tinyURL
+  if (!req.cookies["user_id"]) {
+    //if not logged in
+    res.send("Login required to shorten URLs.");
+  } else {
+    const id = generateRandomStrings();
+    urlDatabase[id] = {};
+    urlDatabase[id].longURL = req.body.longURL;
+    urlDatabase[id].userID = req.cookies["user_id"];
+    res.redirect(`/urls/${id}`); // Redirect to new tinyURL
+  }
+  
 });
 
 //Get tiny URL page
 app.get("/urls/:id", (req, res) => {
-  const templateVars = {id: req.params.id, longURL: urlDatabase[req.params.id], user : getUserById(req.cookies["user_id"])};
-  res.render("urls_show", templateVars);
+  if (!urlDatabase[req.params.id]) {
+    //if url id does not exist
+    res.send("URL does not exist.");
+  } else if (!req.cookies["user_id"]) {
+    //if not logged in
+    res.send("Login required to view/edit URL info.");
+  } else if (urlDatabase[req.params.id].userID !== req.cookies["user_id"]) {
+    //if url does not belong to user
+    res.send("URL does not belong to user.");
+  } else {
+    const templateVars = {id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user : getUserById(req.cookies["user_id"])};
+    res.render("urls_show", templateVars);
+  } 
 });
 
 //Get redirect to longURL
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
-  res.redirect(longURL);
+  //checl if shortened URL is missing from URL database
+  if (!urlDatabase[req.params.id]) {
+    res.send(`Shortend URL '${req.params.id}' not found.`)
+  } else {
+    const longURL = urlDatabase[req.params.id].longURL;
+    res.redirect(longURL);
+  }
 });
 
 //Post update to URL
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.update;
-  res.redirect('/urls');
+  if (!urlDatabase[req.params.id]) {
+    //if url id does not exist
+    res.send("URL does not exist.");
+  } else if (!req.cookies["user_id"]) {
+    //if not logged in
+    res.send("Login required to view/edit URL info.");
+  } else if (urlDatabase[req.params.id].userID !== req.cookies["user_id"]) {
+    //if url does not belong to user
+    res.send("URL does not belong to user.");
+  } else {
+    urlDatabase[req.params.id].longURL = req.body.update;
+    res.redirect('/urls');
+  }
 });
 
 //Post delete URL
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect('/urls');
+  if (!urlDatabase[req.params.id]) {
+    //if url id does not exist
+    res.send("URL does not exist.");
+  } else if (!req.cookies["user_id"]) {
+    //if not logged in
+    res.send("Login required to view/edit URL info.");
+  } else if (urlDatabase[req.params.id].userID !== req.cookies["user_id"]) {
+    //if url does not belong to user
+    res.send("URL does not belong to user.");
+  } else {
+    delete urlDatabase[req.params.id];
+    res.redirect('/urls');
+  }
 });
 
 //Get login page
 app.get("/login", (req, res) => {
-  const templateVars = {user : getUserById(req.cookies["user_id"])};
-  res.render("urls_login", templateVars);
+  if (req.cookies["user_id"]) {
+    //Redirect if logged in
+    res.redirect('/urls');
+  } else {
+    const templateVars = {user : getUserById(req.cookies["user_id"])};
+    res.render("urls_login", templateVars);
+  }
+  
 });
 
 //Post login
@@ -127,9 +208,12 @@ app.post("/login", (req, res) => {
       res.cookie('user_id', user.id);
       res.redirect('/urls');
       return;
+    } else {
+      res.status(403).send("Incorrect password.");
     }
+  } else {
+    res.status(403).send("Incorrect email.");
   }
-  res.status(403).send("Incorrect email or password.");
 });
 
 //Post logout
@@ -140,8 +224,13 @@ app.post("/logout", (req, res) => {
 
 //Get register page
 app.get("/register", (req, res) => {
-  const templateVars = {user : getUserById(req.cookies["user_id"])};
-  res.render("urls_register", templateVars);
+  if (req.cookies["user_id"]) {
+    //Redirect if logged in
+    res.redirect('/urls');
+  } else {
+    const templateVars = {user : getUserById(req.cookies["user_id"])};
+    res.render("urls_register", templateVars);
+  }
 });
 
 //Post register
